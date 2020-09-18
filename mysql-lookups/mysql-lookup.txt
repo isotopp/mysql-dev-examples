@@ -1,0 +1,362 @@
+mysql-lookup.txt
+
+
+kris@localhost [kris]> show create table log\G
+*************************** 1. row ***************************
+       Table: log
+Create Table: CREATE TABLE `log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `device_id` int NOT NULL,
+  `change_time` datetime NOT NULL,
+  `old_state` varchar(64) NOT NULL,
+  `new_state` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+1 row in set (0.00 sec)
+
+kris@localhost [kris]> select * from log;
++----+-----------+---------------------+---------------+---------------+
+| id | device_id | change_time         | old_state     | new_state     |
++----+-----------+---------------------+---------------+---------------+
+|  1 |        17 | 2020-09-18 10:06:37 | racked        | burn-in       |
+|  2 |        17 | 2020-09-18 10:14:18 | burn-in       | provisionable |
+|  3 |        17 | 2020-09-18 10:14:34 | provisionable | setup         |
+|  4 |        17 | 2020-09-18 10:14:48 | setup         | installed     |
+|  5 |        17 | 2020-09-18 10:14:56 | installed     | live          |
++----+-----------+---------------------+---------------+---------------+
+5 rows in set (0.00 sec)
+
+kris@localhost [kris]> select NULL as id, old_state from log group by old_state;
++------+---------------+
+| id   | old_state     |
++------+---------------+
+| NULL | racked        |
+| NULL | burn-in       |
+| NULL | provisionable |
+| NULL | setup         |
+| NULL | installed     |
++------+---------------+
+5 rows in set (0.00 sec)
+
+kris@localhost [kris]> select NULL as id, old_state from log group by old_state
+union  select NULL as id, new_state from log group by new_state;
++------------+---------------+
+| id         | old_state     |
++------------+---------------+
+| 0x         | racked        |
+| 0x         | burn-in       |
+| 0x         | provisionable |
+| 0x         | setup         |
+| 0x         | installed     |
+| 0x         | live          |
++------------+---------------+
+6 rows in set (0.00 sec)
+
+kris@localhost [kris]> select cast(NULL as signed) as id, old_state as state from log group by state union  select cast(NULL as signed) as id, new_state as stat
+e from log group by state;
++------+---------------+
+| id   | state         |
++------+---------------+
+| NULL | racked        |
+| NULL | burn-in       |
+| NULL | provisionable |
+| NULL | setup         |
+| NULL | installed     |
+| NULL | live          |
++------+---------------+
+6 rows in set (0.00 sec)
+
+kris@localhost [kris]> show create table map\G
+*************************** 1. row ***************************
+       Table: map
+Create Table: CREATE TABLE `map` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `state` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+1 row in set (0.00 sec)
+
+kris@localhost [kris]> insert into map select cast(NULL as signed) as id, old_state as state from log group by state union  select cast(NULL as signed) as id, new_state as state from log group by state;
+Query OK, 6 rows affected (0.02 sec)
+Records: 6  Duplicates: 0  Warnings: 0
+
+kris@localhost [kris]> select * from map;
++----+---------------+
+| id | state         |
++----+---------------+
+|  1 | racked        |
+|  2 | burn-in       |
+|  3 | provisionable |
+|  4 | setup         |
+|  5 | installed     |
+|  6 | live          |
++----+---------------+
+6 rows in set (0.00 sec)
+
+kris@localhost [kris]> alter table map add index(state);
+Query OK, 0 rows affected (0.08 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+kris@localhost [kris]> alter table log add column old_state_id integer not null after old_state;
+Query OK, 0 rows affected (0.16 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+kris@localhost [kris]> alter table log add index(old_state), add index(old_state_id);
+Query OK, 0 rows affected (0.14 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+kris@localhost [kris]> select map.id as old_state_id from map join log on map.state = log.old_state;
++--------------+
+| old_state_id |
++--------------+
+|            2 |
+|            5 |
+|            3 |
+|            1 |
+|            4 |
++--------------+
+5 rows in set (0.00 sec)
+
+kris@localhost [kris]> update log set log.old_state_id = ( select id from map where log.old_state = map.state);
+Query OK, 5 rows affected (0.02 sec)
+Rows matched: 5  Changed: 5  Warnings: 0
+
+kris@localhost [kris]> select * from log;
++----+-----------+---------------------+---------------+--------------+---------------+
+| id | device_id | change_time         | old_state     | old_state_id | new_state     |
++----+-----------+---------------------+---------------+--------------+---------------+
+|  1 |        17 | 2020-09-18 10:06:37 | racked        |            1 | burn-in       |
+|  2 |        17 | 2020-09-18 10:14:18 | burn-in       |            2 | provisionable |
+|  3 |        17 | 2020-09-18 10:14:34 | provisionable |            3 | setup         |
+|  4 |        17 | 2020-09-18 10:14:48 | setup         |            4 | installed     |
+|  5 |        17 | 2020-09-18 10:14:56 | installed     |            5 | live          |
++----+-----------+---------------------+---------------+--------------+---------------+
+5 rows in set (0.00 sec)
+
+kris@localhost [kris]> alter table log add column new_state_id integer not null, add index(new_state_id);
+Query OK, 0 rows affected (0.24 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+kris@localhost [kris]> update log set log.new_state_id = ( select id from map where log.new_state = map.state);
+Query OK, 5 rows affected (0.01 sec)
+Rows matched: 5  Changed: 5  Warnings: 0
+
+kris@localhost [kris]> select * from log;
++----+-----------+---------------------+---------------+--------------+---------------+--------------+
+| id | device_id | change_time         | old_state     | old_state_id | new_state     | new_state_id |
++----+-----------+---------------------+---------------+--------------+---------------+--------------+
+|  1 |        17 | 2020-09-18 10:06:37 | racked        |            1 | burn-in       |            2 |
+|  2 |        17 | 2020-09-18 10:14:18 | burn-in       |            2 | provisionable |            3 |
+|  3 |        17 | 2020-09-18 10:14:34 | provisionable |            3 | setup         |            4 |
+|  4 |        17 | 2020-09-18 10:14:48 | setup         |            4 | installed     |            5 |
+|  5 |        17 | 2020-09-18 10:14:56 | installed     |            5 | live          |            6 |
++----+-----------+---------------------+---------------+--------------+---------------+--------------+
+5 rows in set (0.00 sec)
+
+kris@localhost [kris]> alter table log drop column old_state, drop column new_state;
+Query OK, 0 rows affected (0.24 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+kris@localhost [kris]> show create table log\G
+*************************** 1. row ***************************
+       Table: log
+Create Table: CREATE TABLE `log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `device_id` int NOT NULL,
+  `change_time` datetime NOT NULL,
+  `old_state_id` int NOT NULL,
+  `new_state_id` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `old_state_id` (`old_state_id`),
+  KEY `new_state_id` (`new_state_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+1 row in set (0.01 sec)
+
+kris@localhost [kris]> select * from log;
++----+-----------+---------------------+--------------+--------------+
+| id | device_id | change_time         | old_state_id | new_state_id |
++----+-----------+---------------------+--------------+--------------+
+|  1 |        17 | 2020-09-18 10:06:37 |            1 |            2 |
+|  2 |        17 | 2020-09-18 10:14:18 |            2 |            3 |
+|  3 |        17 | 2020-09-18 10:14:34 |            3 |            4 |
+|  4 |        17 | 2020-09-18 10:14:48 |            4 |            5 |
+|  5 |        17 | 2020-09-18 10:14:56 |            5 |            6 |
++----+-----------+---------------------+--------------+--------------+
+5 rows in set (0.00 sec)
+
+kris@localhost [kris]> select log.id, log.device_id, log.change_time, oldmap.state as old_state, newmap.state as new_state from log join map as oldmap on log.old_state_id = oldmap.id join map as newmap on log.new_state_id = newmap.id;
++----+-----------+---------------------+---------------+---------------+
+| id | device_id | change_time         | old_state     | new_state     |
++----+-----------+---------------------+---------------+---------------+
+|  1 |        17 | 2020-09-18 10:06:37 | racked        | burn-in       |
+|  2 |        17 | 2020-09-18 10:14:18 | burn-in       | provisionable |
+|  3 |        17 | 2020-09-18 10:14:34 | provisionable | setup         |
+|  4 |        17 | 2020-09-18 10:14:48 | setup         | installed     |
+|  5 |        17 | 2020-09-18 10:14:56 | installed     | live          |
++----+-----------+---------------------+---------------+---------------+
+5 rows in set (0.00 sec)
+
+
+
+----
+
+
+$ ./lookups.py --help
+Usage: lookups.py [OPTIONS] COMMAND [ARGS]...
+
+  Data Warehouse Lookup Encoding Demo
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  create-log-data
+  finish-log-transformation
+  perform-log-transformation
+  prepare-log-transformation
+  setup-tables
+
+$ time ./lookups.py setup-tables
+
+real	0m0.387s
+user	0m0.038s
+sys	0m0.008s
+
+$ time ./lookups.py create-log-data --devicecount 1000 --statecount 1000
+
+real	2m9.729s
+user	0m30.487s
+sys	0m7.536s
+
+-rw-r----- 1 mysql mysql  64M Sep 18 12:27 log.ibd
+root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
+*************************** 1. row ***************************
+  TABLE_CATALOG: def
+   TABLE_SCHEMA: kris
+     TABLE_NAME: log
+     TABLE_TYPE: BASE TABLE
+         ENGINE: InnoDB
+        VERSION: 10
+     ROW_FORMAT: Dynamic
+     TABLE_ROWS: 998347
+ AVG_ROW_LENGTH: 59
+    DATA_LENGTH: 59326464
+MAX_DATA_LENGTH: 0
+   INDEX_LENGTH: 0
+      DATA_FREE: 4194304
+ AUTO_INCREMENT: 1000001
+    CREATE_TIME: 2020-09-18 12:24:50
+    UPDATE_TIME: 2020-09-18 12:27:05
+     CHECK_TIME: NULL
+TABLE_COLLATION: utf8mb4_0900_ai_ci
+       CHECKSUM: NULL
+ CREATE_OPTIONS:
+  TABLE_COMMENT:
+1 row in set (0.00 sec)
+
+
+$ time ./lookups.py prepare-log-transformation
+Adding id columns and indexes
+
+real	0m31.592s
+user	0m0.052s
+sys	0m0.000s
+
+-rw-r----- 1 mysql mysql 160M Sep 18 12:28 log.ibd
+
+$ time ./lookups.py perform-log-transformation
+Populating map
+Converting old_states
+Converting new_states
+
+real	1m31.549s
+user	0m0.045s
+sys	0m0.000s
+
+-rw-r----- 1 mysql mysql 192M Sep 18 12:31 log.ibd
+root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
+*************************** 1. row ***************************
+  TABLE_CATALOG: def
+   TABLE_SCHEMA: kris
+     TABLE_NAME: log
+     TABLE_TYPE: BASE TABLE
+         ENGINE: InnoDB
+        VERSION: 10
+     ROW_FORMAT: Dynamic
+     TABLE_ROWS: 994090
+ AVG_ROW_LENGTH: 78
+    DATA_LENGTH: 78200832
+MAX_DATA_LENGTH: 0
+   INDEX_LENGTH: 97714176
+      DATA_FREE: 20971520
+ AUTO_INCREMENT: 1000001
+    CREATE_TIME: 2020-09-18 12:28:07
+    UPDATE_TIME: NULL
+     CHECK_TIME: NULL
+TABLE_COLLATION: utf8mb4_0900_ai_ci
+       CHECKSUM: NULL
+ CREATE_OPTIONS:
+  TABLE_COMMENT:
+1 row in set (0.00 sec)
+
+$ time ./lookups.py finish-log-transformation
+Removing string columns
+
+real	0m59.513s
+user	0m0.041s
+sys	0m0.004s
+
+-rw-r----- 1 mysql mysql  84M Sep 18 12:32 log.ibd
+root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
+*************************** 1. row ***************************
+  TABLE_CATALOG: def
+   TABLE_SCHEMA: kris
+     TABLE_NAME: log
+     TABLE_TYPE: BASE TABLE
+         ENGINE: InnoDB
+        VERSION: 10
+     ROW_FORMAT: Dynamic
+     TABLE_ROWS: 997632
+ AVG_ROW_LENGTH: 48
+    DATA_LENGTH: 48824320
+MAX_DATA_LENGTH: 0
+   INDEX_LENGTH: 32538624
+      DATA_FREE: 3145728
+ AUTO_INCREMENT: 1000001
+    CREATE_TIME: 2020-09-18 12:31:43
+    UPDATE_TIME: NULL
+     CHECK_TIME: NULL
+TABLE_COLLATION: utf8mb4_0900_ai_ci
+       CHECKSUM: NULL
+ CREATE_OPTIONS:
+  TABLE_COMMENT:
+1 row in set (0.00 sec)
+
+Dropping indexes is not useful, but 
+
+-rw-r----- 1 mysql mysql  52M Sep 18 12:34 log.ibd
+root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
+*************************** 1. row ***************************
+  TABLE_CATALOG: def
+   TABLE_SCHEMA: kris
+     TABLE_NAME: log
+     TABLE_TYPE: BASE TABLE
+         ENGINE: InnoDB
+        VERSION: 10
+     ROW_FORMAT: Dynamic
+     TABLE_ROWS: 997632
+ AVG_ROW_LENGTH: 48
+    DATA_LENGTH: 48824320
+MAX_DATA_LENGTH: 0
+   INDEX_LENGTH: 0
+      DATA_FREE: 2097152
+ AUTO_INCREMENT: 1000001
+    CREATE_TIME: 2020-09-18 12:34:07
+    UPDATE_TIME: NULL
+     CHECK_TIME: NULL
+TABLE_COLLATION: utf8mb4_0900_ai_ci
+       CHECKSUM: NULL
+ CREATE_OPTIONS:
+  TABLE_COMMENT:
+1 row in set (0.01 sec)
+
