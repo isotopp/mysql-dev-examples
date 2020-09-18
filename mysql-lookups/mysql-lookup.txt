@@ -218,9 +218,9 @@ Commands:
 
 $ time ./lookups.py setup-tables
 
-real	0m0.387s
-user	0m0.038s
-sys	0m0.008s
+real    0m0.326s
+user    0m0.049s
+sys     0m0.000s
 
 $ time ./lookups.py create-log-data --devicecount 1000 --statecount 1000
 
@@ -258,22 +258,23 @@ TABLE_COLLATION: utf8mb4_0900_ai_ci
 $ time ./lookups.py prepare-log-transformation
 Adding id columns and indexes
 
-real	0m31.592s
-user	0m0.052s
-sys	0m0.000s
+real    0m24.395s
+user    0m0.050s
+sys     0m0.004s
 
--rw-r----- 1 mysql mysql 160M Sep 18 12:28 log.ibd
+-rw-r----- 1 mysql mysql 132M Sep 18 19:05 log.ibd
 
-$ time ./lookups.py perform-log-transformation
+s$ time ./lookups.py perform-log-transformation
 Populating map
 Converting old_states
 Converting new_states
 
-real	1m31.549s
-user	0m0.045s
-sys	0m0.000s
+real    0m39.729s
+user    0m0.050s
+sys     0m0.008s
 
--rw-r----- 1 mysql mysql 192M Sep 18 12:31 log.ibd
+-rw-r----- 1 mysql mysql 132M Sep 18 19:07 log.ibd
+
 root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
 *************************** 1. row ***************************
   TABLE_CATALOG: def
@@ -283,15 +284,15 @@ root@localhost [kris]> select * from information_schema.tables where table_name 
          ENGINE: InnoDB
         VERSION: 10
      ROW_FORMAT: Dynamic
-     TABLE_ROWS: 994090
+     TABLE_ROWS: 996152
  AVG_ROW_LENGTH: 78
     DATA_LENGTH: 78200832
 MAX_DATA_LENGTH: 0
-   INDEX_LENGTH: 97714176
-      DATA_FREE: 20971520
+   INDEX_LENGTH: 50446336
+      DATA_FREE: 5242880
  AUTO_INCREMENT: 1000001
-    CREATE_TIME: 2020-09-18 12:28:07
-    UPDATE_TIME: NULL
+    CREATE_TIME: 2020-09-18 19:05:03
+    UPDATE_TIME: 2020-09-18 19:06:55
      CHECK_TIME: NULL
 TABLE_COLLATION: utf8mb4_0900_ai_ci
        CHECKSUM: NULL
@@ -302,40 +303,13 @@ TABLE_COLLATION: utf8mb4_0900_ai_ci
 $ time ./lookups.py finish-log-transformation
 Removing string columns
 
-real	0m59.513s
-user	0m0.041s
-sys	0m0.004s
+real    0m10.486s
+user    0m0.045s
+sys     0m0.008s
 
--rw-r----- 1 mysql mysql  84M Sep 18 12:32 log.ibd
-root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
-*************************** 1. row ***************************
-  TABLE_CATALOG: def
-   TABLE_SCHEMA: kris
-     TABLE_NAME: log
-     TABLE_TYPE: BASE TABLE
-         ENGINE: InnoDB
-        VERSION: 10
-     ROW_FORMAT: Dynamic
-     TABLE_ROWS: 997632
- AVG_ROW_LENGTH: 48
-    DATA_LENGTH: 48824320
-MAX_DATA_LENGTH: 0
-   INDEX_LENGTH: 32538624
-      DATA_FREE: 3145728
- AUTO_INCREMENT: 1000001
-    CREATE_TIME: 2020-09-18 12:31:43
-    UPDATE_TIME: NULL
-     CHECK_TIME: NULL
-TABLE_COLLATION: utf8mb4_0900_ai_ci
-       CHECKSUM: NULL
- CREATE_OPTIONS:
-  TABLE_COMMENT:
-1 row in set (0.00 sec)
+-rw-r----- 1 mysql mysql  52M Sep 18 19:08 log.ibd
 
-Dropping indexes is not useful, but 
-
--rw-r----- 1 mysql mysql  52M Sep 18 12:34 log.ibd
-root@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
+kris@localhost [kris]> select * from information_schema.tables where table_name = "log"\G
 *************************** 1. row ***************************
   TABLE_CATALOG: def
    TABLE_SCHEMA: kris
@@ -351,12 +325,11 @@ MAX_DATA_LENGTH: 0
    INDEX_LENGTH: 0
       DATA_FREE: 2097152
  AUTO_INCREMENT: 1000001
-    CREATE_TIME: 2020-09-18 12:34:07
+    CREATE_TIME: 2020-09-18 19:08:22
     UPDATE_TIME: NULL
      CHECK_TIME: NULL
 TABLE_COLLATION: utf8mb4_0900_ai_ci
        CHECKSUM: NULL
  CREATE_OPTIONS:
   TABLE_COMMENT:
-1 row in set (0.01 sec)
-
+1 row in set (0.00 sec)
