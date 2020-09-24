@@ -1,0 +1,93 @@
+partitions.txt
+
+$ ./partitions.py  setup-tables
+$ ./partitions.py  start-processing
+create p2 reason: not enough partitions
+cmd = alter table data add partition ( partition p2 values less than ( 20000))
+create p3 reason: not enough partitions
+cmd = alter table data add partition ( partition p3 values less than ( 30000))
+create p4 reason: not enough partitions
+cmd = alter table data add partition ( partition p4 values less than ( 40000))
+create p5 reason: not enough partitions
+cmd = alter table data add partition ( partition p5 values less than ( 50000))
+create p6 reason: not enough empty partitions
+cmd = alter table data add partition ( partition p6 values less than ( 60000))
+counter = 1000
+counter = 2000
+counter = 3000
+counter = 4000
+counter = 5000
+counter = 6000
+counter = 7000
+counter = 8000
+counter = 9000
+counter = 10000
+create p7 reason: not enough empty partitions
+cmd = alter table data add partition ( partition p7 values less than ( 70000))
+counter = 11000
+...
+counter = 90000
+create p15 reason: not enough empty partitions
+cmd = alter table data add partition ( partition p15 values less than ( 150000))
+drop p1 reason: too many partitions with data
+cmd = alter table data drop partition p1
+counter = 91000
+counter = 92000
+...
+counter = 100000
+drop p2 reason: too many partitions with data
+cmd = alter table data drop partition p2
+create p16 reason: not enough empty partitions
+cmd = alter table data add partition ( partition p16 values less than ( 160000))
+counter = 101000
+counter = 102000
+...
+kris@localhost [kris]> show create table data\G
+*************************** 1. row ***************************
+       Table: data
+Create Table: CREATE TABLE `data` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `d` varchar(64) NOT NULL,
+  `e` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=108213 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+/*!50100 PARTITION BY RANGE (`id`)
+(PARTITION p3 VALUES LESS THAN (30000) ENGINE = InnoDB,
+ PARTITION p4 VALUES LESS THAN (40000) ENGINE = InnoDB,
+ PARTITION p5 VALUES LESS THAN (50000) ENGINE = InnoDB,
+ PARTITION p6 VALUES LESS THAN (60000) ENGINE = InnoDB,
+ PARTITION p7 VALUES LESS THAN (70000) ENGINE = InnoDB,
+ PARTITION p8 VALUES LESS THAN (80000) ENGINE = InnoDB,
+ PARTITION p9 VALUES LESS THAN (90000) ENGINE = InnoDB,
+ PARTITION p10 VALUES LESS THAN (100000) ENGINE = InnoDB,
+ PARTITION p11 VALUES LESS THAN (110000) ENGINE = InnoDB,
+ PARTITION p12 VALUES LESS THAN (120000) ENGINE = InnoDB,
+ PARTITION p13 VALUES LESS THAN (130000) ENGINE = InnoDB,
+ PARTITION p14 VALUES LESS THAN (140000) ENGINE = InnoDB,
+ PARTITION p15 VALUES LESS THAN (150000) ENGINE = InnoDB,
+ PARTITION p16 VALUES LESS THAN (160000) ENGINE = InnoDB) */
+1 row in set (0.05 sec)
+
+kris@localhost [kris]> select count(*) from data;
++----------+
+| count(*) |
++----------+
+|    89872 |
++----------+
+1 row in set (0.00 sec)
+
+kris@localhost [kris]> select count(*) from data;
++----------+
+| count(*) |
++----------+
+|    90122 |
++----------+
+1 row in set (0.02 sec)
+
+kris@localhost [kris]> select count(*) from data;
++----------+
+| count(*) |
++----------+
+|    80362 |
++----------+
+1 row in set (0.01 sec)
