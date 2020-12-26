@@ -33,8 +33,9 @@ def start_processing():
     proc_insert.start()
 
 
+
 @sql.command()
-@click.option("--size", default=100000, help="Number of rows to create in total")
+@click.option("--size", default=1000000, help="Number of rows to create in total")
 @click.option("--nicelevel", default=0.9, help="Level of niceness in population(double: 0-1)")
 def setup_tables(size, nicelevel):
     sql_setup = [
@@ -44,7 +45,7 @@ def setup_tables(size, nicelevel):
                 name varchar(64) not null,
                 loc point srid 0 not null,
                 age integer not null,
-                niceflag enum('no', 'yes') not null,
+                behavior enum('naughty', 'nice') not null,
                 wish varchar(64) not null,
                 index(niceflag, name),
                 spatial index(loc)
@@ -70,7 +71,7 @@ def setup_tables(size, nicelevel):
             "xloc": random()*360-180,
             "yloc": random()*180-90,
             "age": randint(1, 100),
-            "niceflag": "no" if random() > nicelevel else "yes",
+            "behavior": "naughty" if random() > nicelevel else "nice",
             "wish": "".join([chr(randint(97, 97 + 26)) for x in range(64)]),
         }
 
