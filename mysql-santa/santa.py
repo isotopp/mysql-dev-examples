@@ -34,27 +34,27 @@ def start_processing():
 
 
 @sql.command()
-@click.option("--size", default=10000, help="Number of rows to create in total")
-@click.option("--nicelevel", default=0.5, help="Level of niceness in population(double: 0-1)")
+@click.option("--size", default=100000, help="Number of rows to create in total")
+@click.option("--nicelevel", default=0.9, help="Level of niceness in population(double: 0-1)")
 def setup_tables(size, nicelevel):
     sql_setup = [
         "drop table if exists santa",
         """ create table santa (
                 id integer not null primary key auto_increment,
                 name varchar(64) not null,
-                loc point not null,
+                loc point srid 0 not null,
                 age integer not null,
                 niceflag enum('no', 'yes') not null,
                 wish varchar(64) not null,
                 index(niceflag, name),
-                index(loc)
+                spatial index(loc)
         )""",
     ]
 
     db = MySQLdb.connect(**db_config)
     sql = """insert into santa
              (id, name, loc, age, niceflag, wish )
-      values (%(id)s, %(name)s, ST_GeomFrom Text('Point(%(xloc)s %(yloc)s)', %(age)s, %(niceflag)s, %(wish)s)"""
+      values (%(id)s, %(name)s, ST_GeomFromText('Point(%(xloc)s %(yloc)s)'), %(age)s, %(niceflag)s, %(wish)s)"""
 
     for cmd in sql_setup:
         try:
@@ -76,6 +76,7 @@ def setup_tables(size, nicelevel):
 
         c.execute(sql, data)
         if i%1000 == 0:
+            print(f"{i=}")
             db.commit()
 
     db.commit()
