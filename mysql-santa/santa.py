@@ -1,0 +1,83 @@
+#! /usr/bin/env python3
+
+from time import sleep
+from random import randint, random
+
+import click
+import MySQLdb
+import MySQLdb.cursors
+
+
+db_config = dict(
+    host="localhost",
+    user="kris",
+    passwd="geheim",
+    db="kris",
+    cursorclass=MySQLdb.cursors.DictCursor,
+)
+
+
+
+@click.group(help="SQL clause is coming to town")
+def sql():
+    pass
+
+
+@sql.command()
+def start_processing():
+    proc_partition = Process(target=partitioner)
+    proc_partition.start()
+    proc_drop = Process(target=dropper)
+    proc_drop.start()
+    proc_insert = Process(target=inserter)
+    proc_insert.start()
+
+
+@sql.command()
+@click.option("--size", default=10000, help="Number of rows to create in total")
+@click.option("--nicelevel", default=0.5, help="Level of niceness in population(double: 0-1)")
+def setup_tables(size, nicelevel):
+    sql_setup = [
+        "drop table if exists santa",
+        """ create table santa (
+                id integer not null primary key auto_increment,
+                name varchar(64) not null,
+                loc point not null,
+                age integer not null,
+                niceflag enum('no', 'yes') not null,
+                wish varchar(64) not null,
+                index(niceflag, name),
+                index(loc)
+        )""",
+    ]
+
+    db = MySQLdb.connect(**db_config)
+    sql = """insert into santa
+             (id, name, loc, age, niceflag, wish )
+      values (%(id)s, %(name)s, ST_GeomFrom Text('Point(%(xloc)s %(yloc)s)', %(age)s, %(niceflag)s, %(wish)s)"""
+
+    for cmd in sql_setup:
+        try:
+            c = db.cursor()
+            c.execute(cmd)
+        except MySQLdb.OperationalError as e:
+            click.echo(f"setup_tables: failed {e} with {cmd}.")
+
+    for i in range(1, size):
+        data = {
+            "id": i,
+            "name": "".join([chr(randint(97, 97 + 26)) for x in range(64)]),
+            "xloc": random()*360-180,
+            "yloc": random()*180-90,
+            "age": randint(1, 100),
+            "niceflag": "no" if random() > nicelevel else "yes",
+            "wish": "".join([chr(randint(97, 97 + 26)) for x in range(64)]),
+        }
+
+        c.execute(sql, data)
+        if i%1000 == 0:
+            db.commit()
+
+    db.commit()
+
+sql()
