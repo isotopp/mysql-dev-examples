@@ -10,7 +10,8 @@ import MySQLdb.cursors
 
 
 db_config = dict(
-    host="localhost",
+    host="127.0.0.1",
+    port=8023,
     user="kris",
     passwd="geheim",
     db="kris",
