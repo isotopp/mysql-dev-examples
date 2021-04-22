@@ -6,6 +6,6 @@ for i in {5..14}
 do
 	csize=$((2 ** $i))
 	./mysql-commit-size.py truncate
-	echo "./mysql-commit-size.py fill --size=100000 --commit-size=$csize"
-	time ./mysql-commit-size.py fill --size=100000 --commit-size=$csize
+	echo "./mysql-commit-size.py fill --size=10000000 --commit-size=$csize"
+	time ./mysql-commit-size.py fill --size=10000000 --commit-size=$csize
 done
