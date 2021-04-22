@@ -6,6 +6,7 @@ import os
 import time
 from typing import Dict, List, Optional, Any
 from distutils.version import LooseVersion
+import subprocess
 
 import MySQLdb  # type: ignore
 import MySQLdb.cursors  # type: ignore
@@ -245,12 +246,14 @@ class Probe:
         self.update_status()
         self.update_variables()
 
-    def write(self, section: str) -> None:
+    def write(self, section: str) -> str:
         """ writes data to file ./section_hh_mm (current directory set by create_logdir() """
         hhmm = datetime.now().strftime("%H_%M")
         filename = f"{section}_{hhmm}"
         with open(filename, "w") as f:
             f.write(str(self))
+
+        return filename
 
 def which(program: str) -> Optional[str]:
     fpath, fname = os.path.split(program)
@@ -331,8 +334,9 @@ with pidfile(config["DEFAULT"]["pidfile"]):
         probes[probe].update_all()
 
         # Write data to file
-        probes[probe].write(probe)
+        file = probes[probe].write(probe)
 
-        # Compress data
-        # if config[probe]["compresscmd"]:
-        #     subprocess.run()
+        # Compress data]
+        cmd = f"{config[probe]['compresscmd']} {file}"
+        if cmd:
+            subprocess.run(cmd.split(" "))
