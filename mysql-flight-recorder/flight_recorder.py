@@ -14,7 +14,9 @@ import MySQLdb.cursors  # type: ignore
 config_defaults = {
     "logdir": "/var/log/mysql_flight_recorder",
     "pidfile": "/tmp/mysql_flight_recorder.pid",
+    "compresscmd": "bzip2 -9",
 }
+
 
 class AlreadyRunningError(Exception):
     """ Exception raised by pidfile if an instance of the process is already running. """
@@ -93,7 +95,7 @@ class Probe:
             str += f"CMD: {k}\n"
             i = 0
             for l in self.log[k]:
-                i+= 1
+                i += 1
                 str += f"{i}: {l}\n"
             str += "\n"
 
@@ -146,13 +148,13 @@ class Probe:
 
         self.version = res["version"]  # remember later for version comparisons
 
-        self.log[cmd] = [ res["version"] ]
+        self.log[cmd] = [res["version"]]
 
     def update_uptime(self) -> None:
         cmd: str = "show global status like 'Uptime'"
         cursor = self._query(cmd)
         res = cursor.fetchone()
-        self.log[cmd] = [ res["Value"]]
+        self.log[cmd] = [res["Value"]]
 
     def update_processlist(self) -> None:
         cmd: str = "show full processlist"
@@ -166,7 +168,7 @@ class Probe:
 
         l = []
         for k, v in res.items():
-             l.append(f"{k}: {v}")
+            l.append(f"{k}: {v}")
 
         self.log[cmd] = l
 
@@ -175,7 +177,7 @@ class Probe:
         cursor = self._query(cmd)
         res = cursor.fetchone()
 
-        self.log[cmd] = [ res["Status" ] ]
+        self.log[cmd] = [res["Status"]]
 
     def update_innodb_trx(self) -> None:
         cmd: str = "select /*+ max_execution_time(10000) */ * from information_schema.innodb_trx"
@@ -190,7 +192,6 @@ class Probe:
         cmd = f"select /*+ max_execution_time(10000) */ * from {table}"
         cursor = self._query(cmd)
         self.log[cmd] = cursor.fetchall()
-
 
     def update_innodb_lock_waits(self) -> None:
         table = "information_schema.innodb_lock_waits"
@@ -216,6 +217,16 @@ class Probe:
         cursor = self._query(cmd)
         self.log[cmd] = cursor.fetchall()
 
+    def update_status(self) -> None:
+        cmd: str = "show global status"
+        cursor = self._query(cmd)
+        self.log[cmd] = cursor.fetchall()
+
+    def update_variables(self) -> None:
+        cmd: str = "show global variables"
+        cursor = self._query(cmd)
+        self.log[cmd] = cursor.fetchall()
+
     def update_all(self) -> None:
         self.log = {}
         self.update_version()
@@ -231,7 +242,15 @@ class Probe:
         self.update_innodb_cmp()
         self.update_innodb_cmpmem()
         self.update_innodb_metrics()
+        self.update_status()
+        self.update_variables()
 
+    def write(self, section: str) -> None:
+        """ writes data to file ./section_hh_mm (current directory set by create_logdir() """
+        hhmm = datetime.now().strftime("%H_%M")
+        filename = f"{section}_{hhmm}"
+        with open(filename, "w") as f:
+            f.write(str(self))
 
 def which(program: str) -> Optional[str]:
     fpath, fname = os.path.split(program)
@@ -308,6 +327,12 @@ with pidfile(config["DEFAULT"]["pidfile"]):
         probes[section] = Probe(**connparms)
 
     for probe in probes:
-        print(f"Update {probe}...")
+        # collect data from MySQL
         probes[probe].update_all()
-        print(f"{probes[probe]}")
+
+        # Write data to file
+        probes[probe].write(probe)
+
+        # Compress data
+        # if config[probe]["compresscmd"]:
+        #     subprocess.run()
