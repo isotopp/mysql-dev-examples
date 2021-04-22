@@ -7,7 +7,6 @@ import time
 from typing import Dict, List, Optional, Any
 from distutils.version import LooseVersion
 
-import click
 import MySQLdb  # type: ignore
 import MySQLdb.cursors  # type: ignore
 
