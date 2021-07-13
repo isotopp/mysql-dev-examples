@@ -1,5 +1,2 @@
-black
-mypy
-pre-commit
 click
 mysqlclient
