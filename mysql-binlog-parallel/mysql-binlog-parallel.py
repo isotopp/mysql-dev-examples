@@ -12,7 +12,7 @@ class Transaction:
     """
 
     def __init__(self, lc: int, sn: int):
-        """ Build a transaction representent by a lc/sn pair. """
+        """ Build a transaction represented by a lc/sn pair. """
         self.lc = lc
         self.sn = sn
 
