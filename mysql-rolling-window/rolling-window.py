@@ -80,7 +80,7 @@ def daily_window():
          , count(m) over w as cnt
          , sum(m) over w as total
          , sum(m) over w/count(m) over w as av 
-      from ( select id, d, m from data order by id, d) as dd 
+      from data
   window w as (order by d range between interval 1 day preceding and current row)
   """
     cursor = db.cursor()
