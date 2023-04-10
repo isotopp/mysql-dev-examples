@@ -1,15 +1,9 @@
 #! /usr/bin/env python3
 
-import sys
-import random
-import string
-
 import click
 import MySQLdb
 import MySQLdb.cursors
 
-from time import sleep
-from pprint import pprint
 
 db_config = dict(
     host="localhost",
@@ -30,8 +24,8 @@ def ddl(sql, okmsg, failmsg):
         c.execute(sql)
         click.echo(okmsg)
     except MySQLdb.OperationalError as e:
-        click.echo(failmsg)
-        click.echo(sql)
+        click.echo(f"{failmsg}: {e}")
+        click.echo(f"sql was: {sql}")
 
 
 @click.group(help="Test with foreign key constraints")
@@ -53,7 +47,7 @@ def drop(count):
 @click.option("--count", default=25, help="Number of tables to create")
 def create(count):
     """ Create count many tables with fk relationships. """
-    cmd = f"create table a (id integer not null primary key )"
+    cmd = "create table a (id integer not null primary key )"
     ddl(cmd, "table a created.", "cannot create table a.")
 
     for i in range(ord("b"), ord("a")+count):
