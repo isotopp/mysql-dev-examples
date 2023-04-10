@@ -111,7 +111,7 @@ def fill_table(start="2020-01-01 00:00:00", end="2020-12-31 23:59:59", count=100
             sql = "insert into data (id, d, m) values (%(id)s, %(d)s, %(m)s)"
             try:
                 cursor.execute(sql, {"id": id, "d": d, "m": m})
-            except MySQLdb._exceptions.IntegrityError as e:
+            except MySQLdb._exceptions.IntegrityError:
                 # The Birthday Paradox in Action
                 # print(e)
                 pass
