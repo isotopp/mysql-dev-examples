@@ -3,8 +3,7 @@
 import configparser
 from datetime import datetime
 import os
-import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 from distutils.version import LooseVersion
 import subprocess
 
@@ -95,9 +94,9 @@ class Probe:
         for k in self.log:
             str += f"CMD: {k}\n"
             i = 0
-            for l in self.log[k]:
+            for line in self.log[k]:
                 i += 1
-                str += f"{i}: {l}\n"
+                str += f"{i}: {line}\n"
             str += "\n"
 
         return str
@@ -113,7 +112,7 @@ class Probe:
         for c in ["user", "passwd", "host"]:
             try:
                 ret[c] = config[section][c]
-            except KeyError as e:
+            except KeyError:
                 print(f"Config error[{section}]: mandatory entry {c}=<value> missing.")
                 config_valid = False
 
@@ -121,7 +120,7 @@ class Probe:
         try:
             port = int(config[section]["port"])
             ret["port"] = port
-        except ValueError as e:
+        except ValueError:
             print(
                 f"Config error[{section}]: port={config[section]['port']} not an integer."
             )
@@ -167,11 +166,11 @@ class Probe:
         cursor = self._query(cmd)
         res = cursor.fetchone()
 
-        l = []
+        line = []
         for k, v in res.items():
-            l.append(f"{k}: {v}")
+            line.append(f"{k}: {v}")
 
-        self.log[cmd] = l
+        self.log[cmd] = line
 
     def update_innodb_status(self) -> None:
         cmd: str = "show engine innodb status"
@@ -298,7 +297,7 @@ def create_logdir(logdir: str) -> None:
 
 def getconfig(defaults: dict) -> configparser.ConfigParser:
     config = configparser.ConfigParser(defaults=defaults)
-    f = config.read(
+    config.read(
         [
             "/etc/mysql/mysql-flight-recorder.ini",
             "/etc/mysql/mysql_flight_recorder.ini",
