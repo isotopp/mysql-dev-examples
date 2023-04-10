@@ -1,14 +1,11 @@
 #! /usr/bin/env python3
 
 import sys
-import random
-import string
 
 import click
 import MySQLdb
 import MySQLdb.cursors
 
-from pprint import pprint
 
 db_config = dict(
     host="localhost",
@@ -32,7 +29,7 @@ def ddl(sql, okmsg, failmsg):
         c.execute(sql)
         click.echo(okmsg)
     except MySQLdb.OperationalError as e:
-        click.echo(failmsg)
+        click.echo(f"{failmsg}: {e}")
 
 
 @click.group(help="Test with multiple connections")
