@@ -20,7 +20,7 @@ db_config = dict(
 
 
 def find_candidates(cursor, wanted):
-    candidate_cmd = f"select id from jobs where d like %(search_string)s and status = %(wanted)s limit 100"
+    candidate_cmd = "select id from jobs where d like %(search_string)s and status = %(wanted)s limit 100"
     search_string = chr(randint(97, 97 + 25)) + '%'
     try:
         cursor.execute(candidate_cmd, {"search_string": search_string, "wanted": wanted})
@@ -49,7 +49,7 @@ def consumer(consumer_id):
             continue
 
         # with the list of candidate ids, we select them for update, skipping locked records
-        lock_cmd = f"select id, d, e from jobs where status = 'unclaimed' and id in %(candidates)s for update skip locked"
+        lock_cmd = "select id, d, e from jobs where status = 'unclaimed' and id in %(candidates)s for update skip locked"
         c.execute(lock_cmd, {"candidates": candidates})
         claimed_records = c.fetchall()  # these are the records we want to claim for processing
 
