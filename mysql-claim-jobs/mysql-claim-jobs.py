@@ -58,6 +58,7 @@ def consumer(consumer_id):
         claimed_ids_count = len(claimed_ids)
 
         if len(claimed_ids) == 0:
+            db.commit() # and drop the view
             continue
 
         # we claim the records, updating their status and owner
