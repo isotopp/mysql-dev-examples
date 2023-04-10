@@ -1,8 +1,6 @@
 #! /usr/bin/env python3
 
-import sys
 import random
-import string
 
 import click
 import MySQLdb
@@ -18,8 +16,15 @@ db_config = dict(
 
 sql_setup = [
     "drop table if exists log, map",
-    "create table log (id integer not null auto_increment primary key, device_id integer not null,change_time datetime not null, old_state varchar(64) not null, new_state varchar(64))",
-    "create table map (id integer not null auto_increment primary key, state varchar(64) not null, index(state))",
+    """create table log (
+      id integer not null auto_increment primary key, 
+      device_id integer not null,change_time datetime not null, 
+      old_state varchar(64) not null, 
+      new_state varchar(64))""",
+    """create table map (
+      id integer not null auto_increment primary key, 
+      state varchar(64) not null, 
+      index(state))""",
 ]
 
 states = [
@@ -47,25 +52,43 @@ def sql():
 
 @sql.command()
 def prepare_log_transformation():
-    cmd = "alter table log add column old_state_id integer not null after old_state, add column new_state_id integer not null after new_state, add index(old_state), add index(new_state)"
+    cmd = """alter table log 
+      add column old_state_id integer not null after old_state, 
+      add column new_state_id integer not null after new_state, 
+      add index(old_state), add index(new_state)"""
     c = db.cursor()
     print("Adding id columns and indexes")
     c.execute(cmd)
 
 @sql.command()
 def perform_log_transformation():
-    cmd = "insert into map select cast(NULL as signed) as id, old_state as state from log group by state union select cast(NULL as signed) as id, new_state as state from log group by state"
+    cmd = """insert into map 
+      select cast(NULL as signed) as id, 
+        old_state as state 
+        from log 
+        group by state 
+      union 
+        select cast(NULL as signed) as id, 
+        new_state as state 
+        from log 
+        group by state"""
     c = db.cursor()
     print("Populating map")
     c.execute(cmd)
     db.commit()
 
-    cmd = "update log set log.old_state_id = ( select id from map where log.old_state = map.state)"
+    cmd = """update log 
+      set log.old_state_id = ( 
+        select id from map where log.old_state = map.state
+      )"""
     print("Converting old_states")
     c.execute(cmd)
     db.commit()
 
-    cmd = "update log set log.new_state_id = ( select id from map where log.new_state = map.state)"
+    cmd = """update log 
+      set log.new_state_id = ( 
+        select id from map where log.new_state = map.state
+      )"""
     print("Converting new_states")
     c.execute(cmd)
     db.commit()
