@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-from time import sleep
 from random import randint, random
 
 import click
@@ -21,17 +20,6 @@ db_config = dict(
 @click.group(help="SQL clause is coming to town")
 def sql():
     pass
-
-
-@sql.command()
-def start_processing():
-    proc_partition = Process(target=partitioner)
-    proc_partition.start()
-    proc_drop = Process(target=dropper)
-    proc_drop.start()
-    proc_insert = Process(target=inserter)
-    proc_insert.start()
-
 
 
 @sql.command()
