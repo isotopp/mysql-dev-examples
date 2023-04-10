@@ -8,8 +8,6 @@ import click
 import MySQLdb
 import MySQLdb.cursors
 
-from pprint import pprint
-
 db_config = dict(
     host="localhost",
     user="kris",
@@ -49,7 +47,7 @@ def drop(name):
         c.execute(cmd)
         click.echo(f'Table "{name}" dropped.')
     except MySQLdb.OperationalError as e:
-        click.echo(f'Table "{name}" did not exist.')
+        click.echo(f'Table "{name}" did not exist: {e}.')
 
 
 @sql.command()
@@ -63,7 +61,7 @@ def create(name):
         c.execute(cmd)
         click.echo(f'Table "{name}" created.')
     except MySQLdb.OperationalError as e:
-        click.echo(f'Table "{name}" did already exist')
+        click.echo(f'Table "{name}" did already exist: {e}')
 
 
 @sql.command()
@@ -104,8 +102,8 @@ def truncate(name):
         c = db.cursor()
         c.execute(cmd)
         click.echo(f'Table "{name}" truncated.')
-    except MySQL.OperationalError as e:
-        click.echo(f'Table "{name}" does not exist.')
+    except MySQLdb.OperationalError as e:
+        click.echo(f'Table "{name}" does not exist: {e}')
 
 
 sql()
