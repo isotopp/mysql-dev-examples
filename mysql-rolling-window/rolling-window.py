@@ -18,7 +18,7 @@ class DebugCursor(MySQLdb.cursors.DictCursor):
 
 
 db_config = dict(
-    host="127.0.0.1",
+    host="192.168.1.10",
     user="kris",
     passwd="geheim",
     db="kris",
